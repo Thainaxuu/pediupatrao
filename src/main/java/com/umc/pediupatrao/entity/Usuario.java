@@ -1,47 +1,37 @@
 package com.umc.pediupatrao.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "usuarios") // Define a coleção no MongoDB
+@Document(collection = "usuarios")
 public class Usuario {
+
     @Id
     private String id;
-    private String username; // Nome de usuário para login
-    private String password; // Senha criptografada
-    private String role;     // Papel do usuário, como ADMIN ou USER
 
-    public String getId() {
-        return id;
-    }
+    @Indexed(unique = true)
+    private String username;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    /** Hash BCrypt. Nunca e exposto pela API nem registrado na auditoria. */
+    private String password;
 
-    public String getUsername() {
-        return username;
-    }
+    /** Nome do perfil (ADMIN, GERENTE ou ATENDENTE). Mantido como texto por compatibilidade. */
+    private String role;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public String getPassword() {
-        return password;
-    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getRole() {
-        return role;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public void setRole(String role) {
-        this.role = role;
+    public Perfil getPerfil() {
+        return Perfil.fromLegado(role);
     }
-    
-    
 }
