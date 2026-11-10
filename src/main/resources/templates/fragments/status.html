@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<span th:fragment="badge(status)" class="badge status-badge"
+      th:classappend="${status == null} ? 'bg-secondary' :
+                      (${status.name() == 'RECEBIDO'} ? 'bg-primary' :
+                      (${status.name() == 'EM_PREPARACAO'} ? 'bg-warning text-dark' :
+                      (${status.name() == 'PRONTO'} ? 'bg-info text-dark' :
+                      (${status.name() == 'SAIU_PARA_ENTREGA' or status.name() == 'RETIRADO'} ? 'bg-dark' :
+                      (${status.name() == 'FINALIZADO'} ? 'bg-success' : 'bg-danger')))))"
+      th:text="${status != null ? status.descricao : '—'}">STATUS</span>
+</body>
+</html>

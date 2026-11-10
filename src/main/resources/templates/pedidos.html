@@ -1,66 +1,71 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Lista de Pedidos</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-
 <div th:fragment="content">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">
-            <i class="bi bi-bag me-2 text-primary"></i>Pedidos
-        </h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h2 class="fw-bold mb-0"><i class="bi bi-bag me-2 text-primary"></i>Pedidos</h2>
+        <div class="d-flex gap-2">
+            <form method="get" th:action="@{/pedidos}" class="d-flex gap-2">
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todos os status</option>
+                    <option th:each="s : ${todosStatus}" th:value="${s}" th:text="${s.descricao}"
+                            th:selected="${s == statusSelecionado}"></option>
+                </select>
+            </form>
+            <a th:href="@{/pedidos/novo}" class="btn btn-primary btn-sm text-nowrap" sec:authorize="hasAnyRole('ATENDENTE','GERENTE')">
+                <i class="bi bi-plus-lg me-1"></i>Novo pedido
+            </a>
+        </div>
     </div>
 
-    <!-- Mensagens de feedback -->
     <div class="alert alert-success alert-dismissible fade show" th:if="${sucesso}" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>
         <span th:text="${sucesso}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <div class="alert alert-danger alert-dismissible fade show" th:if="${erro}" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
         <span th:text="${erro}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Tabela -->
     <div class="card shadow-sm">
-        <div class="card-body p-0">
+        <div class="card-body p-0 table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th class="ps-4">ID</th>
-                        <th>Cliente ID</th>
-                        <th>Tipo de Pizza</th>
-                        <th>Sabor</th>
-                        <th>Quantidade</th>
+                        <th class="ps-4">Entrada</th>
+                        <th>Cliente</th>
+                        <th>Itens</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Total</th>
                         <th>Status</th>
+                        <th>Registrado por</th>
+                        <th class="text-end pe-4"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Lista vazia -->
                     <tr th:if="${#lists.isEmpty(pedidos)}">
-                        <td colspan="6" class="text-center text-muted py-5">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            Nenhum pedido encontrado.
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhum pedido encontrado.
                         </td>
                     </tr>
-                    <!-- Linhas -->
                     <tr th:each="pedido : ${pedidos}">
-                        <td class="ps-4 text-muted" th:text="${pedido.id}"></td>
-                        <td th:text="${pedido.clienteId}"></td>
-                        <td th:text="${pedido.tipoPizza}"></td>
-                        <td th:text="${pedido.sabor}"></td>
-                        <td th:text="${pedido.quantidade}"></td>
-                        <td>
-                            <span class="badge"
-                                  th:classappend="${pedido.status == 'ENTREGUE'} ? 'bg-success' :
-                                                  (${pedido.status == 'CANCELADO'} ? 'bg-danger' :
-                                                  (${pedido.status == 'EM_PREPARO'} ? 'bg-warning text-dark' : 'bg-secondary'))"
-                                  th:text="${pedido.status}">
-                            </span>
+                        <td class="ps-4 small" th:text="${@fmt.dataHora(pedido.dataHoraEntrada)}"></td>
+                        <td th:text="${pedido.clienteNome != null ? pedido.clienteNome : pedido.clienteId}"></td>
+                        <td class="small">
+                            <span th:if="${!pedido.legado}" th:each="item, st : ${pedido.itens}"
+                                  th:text="${item.quantidade + 'x ' + item.nomeProduto + (st.last ? '' : ', ')}"></span>
+                            <span th:if="${pedido.legado}" class="text-muted"
+                                  th:text="${(pedido.quantidade ?: '') + ' ' + (pedido.tipoPizza ?: '') + ' ' + (pedido.sabor ?: '')}"></span>
+                        </td>
+                        <td class="small" th:text="${pedido.tipoEntregaEfetivo.descricao}"></td>
+                        <td class="text-end fw-medium" th:text="${@fmt.moeda(pedido.valorTotal)}"></td>
+                        <td><span th:replace="~{fragments/status :: badge(${pedido.statusEfetivo})}"></span></td>
+                        <td class="small" th:text="${pedido.registradoPor ?: '—'}"></td>
+                        <td class="text-end pe-4">
+                            <a th:href="@{/pedidos/{id}(id=${pedido.id})}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Abrir
+                            </a>
                         </td>
                     </tr>
                 </tbody>
@@ -70,8 +75,6 @@
             Total: <strong th:text="${#lists.size(pedidos)}"></strong> pedido(s)
         </div>
     </div>
-
 </div>
-
 </body>
 </html>

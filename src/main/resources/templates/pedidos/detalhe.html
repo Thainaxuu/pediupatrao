@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<div th:fragment="content">
+
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+        <a th:href="@{/pedidos}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h2 class="fw-bold mb-0">Pedido</h2>
+        <span th:replace="~{fragments/status :: badge(${pedido.statusEfetivo})}"></span>
+        <small class="text-muted" th:text="${'#' + pedido.id}"></small>
+    </div>
+
+    <div id="alertaErro" class="alert alert-danger" style="display:none; white-space: pre-line;"></div>
+    <div id="alertaOk" class="alert alert-success" style="display:none;"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row small mb-3">
+                        <div class="col-md-6">
+                            <div><strong>Cliente:</strong> <span th:text="${pedido.clienteNome ?: pedido.clienteId}"></span></div>
+                            <div><strong>Tipo:</strong> <span th:text="${pedido.tipoEntregaEfetivo.descricao}"></span></div>
+                            <div th:if="${pedido.observacao}"><strong>Observação:</strong> <span th:text="${pedido.observacao}"></span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div><strong>Entrada:</strong> <span th:text="${@fmt.dataHora(pedido.dataHoraEntrada)}"></span>
+                                por <span th:text="${pedido.registradoPor ?: '—'}"></span></div>
+                            <div><strong>Saída:</strong> <span th:text="${@fmt.dataHora(pedido.dataHoraSaida)}"></span>
+                                <span th:if="${pedido.responsavelSaida}" th:text="${'por ' + pedido.responsavelSaida}"></span></div>
+                            <div th:if="${pedido.dataHoraFinalizacao}"><strong>Finalização:</strong>
+                                <span th:text="${@fmt.dataHora(pedido.dataHoraFinalizacao)}"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger small" th:if="${pedido.statusEfetivo.name() == 'CANCELADO'}">
+                        <strong>Cancelado</strong> em <span th:text="${@fmt.dataHora(pedido.dataHoraCancelamento)}"></span>
+                        por <span th:text="${pedido.canceladoPor}"></span>.
+                        Motivo: <span th:text="${pedido.motivoCancelamento}"></span>
+                    </div>
+
+                    <table class="table table-sm align-middle" th:if="${!pedido.legado}">
+                        <thead><tr><th>Produto</th><th class="text-center">Qtd.</th><th class="text-end">Preço unit.</th><th class="text-end">Subtotal</th></tr></thead>
+                        <tbody>
+                            <tr th:each="item : ${pedido.itens}">
+                                <td><span th:text="${item.nomeProduto}"></span> <small class="text-muted" th:text="${item.categoria}"></small></td>
+                                <td class="text-center" th:text="${item.quantidade}"></td>
+                                <td class="text-end" th:text="${@fmt.moeda(item.precoUnitario)}"></td>
+                                <td class="text-end" th:text="${@fmt.moeda(item.subtotal)}"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr><td colspan="3" class="text-end">Subtotal</td><td class="text-end" th:text="${@fmt.moeda(pedido.subtotal)}"></td></tr>
+                            <tr><td colspan="3" class="text-end">Desconto (<span th:text="${@fmt.percentual(pedido.percentualDesconto)}"></span>)</td>
+                                <td class="text-end text-danger" th:text="${'- ' + @fmt.moeda(pedido.valorDesconto)}"></td></tr>
+                            <tr class="fw-bold fs-5"><td colspan="3" class="text-end">Total</td><td class="text-end" th:text="${@fmt.moeda(pedido.valorTotal)}"></td></tr>
+                        </tfoot>
+                    </table>
+                    <p class="text-muted small" th:if="${pedido.legado}">
+                        Pedido registrado na versão anterior do sistema:
+                        <span th:text="${(pedido.quantidade ?: '') + ' ' + (pedido.tipoPizza ?: '') + ' ' + (pedido.sabor ?: '')}"></span>
+                    </p>
+                    <p class="small text-muted mb-0" th:if="${pedido.descontoAplicadoPor}">
+                        Desconto aplicado por <span th:text="${pedido.descontoAplicadoPor}"></span>
+                        em <span th:text="${@fmt.dataHora(pedido.dataHoraDesconto)}"></span>:
+                        <em th:text="${pedido.justificativaDesconto}"></em>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">Histórico de status</div>
+                <div class="card-body">
+                    <div class="timeline-status">
+                        <div class="item" th:each="h : ${pedido.historico}">
+                            <div class="small">
+                                <strong th:text="${h.statusNovo != null ? h.statusNovo.descricao : '—'}"></strong>
+                                <span class="text-muted" th:text="${'· ' + @fmt.dataHora(h.dataHora) + ' · ' + h.usuario + ' (' + h.perfil + ')'}"></span>
+                            </div>
+                            <div class="small text-muted" th:if="${h.observacao}" th:text="${h.observacao}"></div>
+                        </div>
+                        <div class="small text-muted" th:if="${#lists.isEmpty(pedido.historico)}">Sem histórico registrado.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm" th:if="${trilha != null}">
+                <div class="card-header bg-white fw-bold"><i class="bi bi-shield-check me-1"></i>Trilha de auditoria</div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm mb-0 small">
+                        <thead class="table-light"><tr><th class="ps-3">Data/hora</th><th>Usuário</th><th>Operação</th><th>Alterações</th><th>Justificativa</th></tr></thead>
+                        <tbody>
+                            <tr th:each="r : ${trilha}">
+                                <td class="ps-3 text-nowrap" th:text="${@fmt.dataHora(r.dataHora)}"></td>
+                                <td th:text="${r.usuario + ' (' + r.perfil + ')'}"></td>
+                                <td th:text="${r.operacao.descricao}"></td>
+                                <td>
+                                    <div th:each="a : ${r.alteracoes}">
+                                        <code th:text="${a.campo}"></code>:
+                                        <span class="text-danger" th:text="${a.valorAnterior ?: '∅'}"></span> →
+                                        <span class="text-success" th:text="${a.valorNovo ?: '∅'}"></span>
+                                    </div>
+                                </td>
+                                <td th:text="${r.justificativa ?: ''}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Andamento: ATENDENTE e GERENTE (a regra tambem e validada no servidor) -->
+            <div class="card shadow-sm mb-4" sec:authorize="hasAnyRole('ATENDENTE','GERENTE')"
+                 th:if="${!#lists.isEmpty(pedido.proximosStatus)}">
+                <div class="card-body">
+                    <h6 class="fw-bold">Avançar status</h6>
+                    <input type="text" id="obsStatus" class="form-control form-control-sm mb-2" maxlength="500"
+                           placeholder="Observação (opcional)">
+                    <button type="button" class="btn btn-primary w-100 mb-2 btn-status"
+                            th:each="s : ${pedido.proximosStatus}" th:attr="data-status=${s.name()}">
+                        <i class="bi bi-arrow-right-circle me-1"></i><span th:text="${s.descricao}"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Desconto: somente GERENTE, antes da saida -->
+            <div class="card shadow-sm mb-4" sec:authorize="hasRole('GERENTE')"
+                 th:if="${pedido.statusEfetivo.permiteDesconto() and !pedido.legado}">
+                <div class="card-body">
+                    <h6 class="fw-bold">Aplicar desconto</h6>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="number" id="percentual" class="form-control" min="0" max="20" step="0.5"
+                               th:value="${pedido.percentualDesconto}">
+                        <span class="input-group-text">% (máx. 20)</span>
+                    </div>
+                    <input type="text" id="justificativaDesconto" class="form-control form-control-sm mb-2"
+                           maxlength="500" placeholder="Justificativa">
+                    <button type="button" class="btn btn-warning btn-sm w-100" id="btnDesconto">Aplicar desconto</button>
+                </div>
+            </div>
+
+            <!-- Cancelamento: somente GERENTE, antes da saida -->
+            <div class="card shadow-sm border-danger" sec:authorize="hasRole('GERENTE')"
+                 th:if="${pedido.statusEfetivo.permiteCancelamento()}">
+                <div class="card-body">
+                    <h6 class="fw-bold text-danger">Cancelar pedido</h6>
+                    <textarea id="justificativaCancelamento" class="form-control form-control-sm mb-2" rows="2"
+                              maxlength="500" placeholder="Justificativa (mínimo 10 caracteres)"></textarea>
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100" id="btnCancelar">Cancelar pedido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        (function () {
+            const pedidoId = /*[[${pedido.id}]]*/ '';
+            const base = '/api/pedidos/' + encodeURIComponent(pedidoId);
+
+            async function executar(url, corpo, mensagemOk) {
+                const erro = document.getElementById('alertaErro');
+                erro.style.display = 'none';
+                try {
+                    await apiFetch(url, { method: url.endsWith('/status') ? 'PUT' : 'POST', body: JSON.stringify(corpo) });
+                    const ok = document.getElementById('alertaOk');
+                    ok.textContent = mensagemOk;
+                    ok.style.display = 'block';
+                    setTimeout(() => window.location.reload(), 600);
+                } catch (e) {
+                    erro.textContent = e.message;
+                    erro.style.display = 'block';
+                }
+            }
+
+            document.querySelectorAll('.btn-status').forEach(botao => {
+                botao.addEventListener('click', () => {
+                    const obs = document.getElementById('obsStatus');
+                    executar(base + '/status', { status: botao.dataset.status, observacao: obs ? obs.value : null },
+                        'Status atualizado.');
+                });
+            });
+
+            const btnDesconto = document.getElementById('btnDesconto');
+            if (btnDesconto) {
+                btnDesconto.addEventListener('click', () => executar(base + '/desconto', {
+                    percentual: document.getElementById('percentual').value,
+                    justificativa: document.getElementById('justificativaDesconto').value
+                }, 'Desconto aplicado.'));
+            }
+
+            const btnCancelar = document.getElementById('btnCancelar');
+            if (btnCancelar) {
+                btnCancelar.addEventListener('click', () => {
+                    if (!confirm('Confirmar o cancelamento? Essa operação não pode ser desfeita.')) return;
+                    executar(base + '/cancelar', {
+                        justificativa: document.getElementById('justificativaCancelamento').value
+                    }, 'Pedido cancelado.');
+                });
+            }
+        })();
+    </script>
+</div>
+</body>
+</html>
