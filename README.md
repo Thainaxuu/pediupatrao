@@ -8,6 +8,10 @@ Este projeto evolui o sistema de pedidos de uma pizzaria, com foco em controle d
 Tecnologias: Java 21, Spring Boot 3.4, Spring Security, Spring Data MongoDB e Thymeleaf.
 
 
+## Demonstração em vídeo
+
+[Assistir à demonstração do projeto](docs/video/demonstracao.mp4)
+
 ## O que foi implementado
 
 - Três perfis de acesso (ADMIN, GERENTE e ATENDENTE), com autorização verificada no backend;
