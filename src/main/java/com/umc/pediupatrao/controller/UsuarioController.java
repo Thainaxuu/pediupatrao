@@ -1,13 +1,22 @@
 package com.umc.pediupatrao.controller;
 
-import com.umc.pediupatrao.entity.Usuario;
+import com.umc.pediupatrao.dto.UsuarioRequest;
+import com.umc.pediupatrao.dto.UsuarioResponse;
+import com.umc.pediupatrao.exception.RecursoNaoEncontradoException;
 import com.umc.pediupatrao.service.UsuarioService;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Optional;
-
+/** API de usuarios, exclusiva do ADMIN. As respostas nunca incluem a senha. */
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
@@ -18,54 +27,30 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    // Endpoint para listar todos os usuários
     @GetMapping
-    public ResponseEntity<Iterable<Usuario>> listarTodos() {
-        Iterable<Usuario> usuarios = usuarioService.listarTodos();
-        return ResponseEntity.ok(usuarios);
+    public List<UsuarioResponse> listarTodos() {
+        return usuarioService.listarTodos().stream().map(UsuarioResponse::de).toList();
     }
 
-    // Endpoint para buscar um usuário por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> buscarPorId(@PathVariable String id) {
-        Optional<Usuario> usuario = usuarioService.buscarPorId(id);
-        return usuario.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public UsuarioResponse buscarPorId(@PathVariable String id) {
+        return usuarioService.buscarPorId(id).map(UsuarioResponse::de)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado."));
     }
 
-    // Endpoint para criar um novo usuário
     @PostMapping
-    public ResponseEntity<Usuario> criarUsuario(@RequestBody Usuario usuario) {
-        usuarioService.salvarUsuario(usuario);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    public ResponseEntity<UsuarioResponse> criarUsuario(@RequestBody UsuarioRequest usuario) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioResponse.de(usuarioService.criar(usuario)));
     }
 
-    // Endpoint para atualizar um usuário
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> atualizarUsuario(@PathVariable String id, @RequestBody Usuario usuarioAtualizado) {
-        Optional<Usuario> usuarioExistente = usuarioService.buscarPorId(id);
-
-        if (usuarioExistente.isPresent()) {
-            Usuario usuario = usuarioExistente.get();
-            usuario.setUsername(usuarioAtualizado.getUsername());
-            usuario.setPassword(usuarioAtualizado.getPassword());
-            usuarioService.salvarUsuario(usuario);
-
-            return ResponseEntity.ok(usuario);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public UsuarioResponse atualizarUsuario(@PathVariable String id, @RequestBody UsuarioRequest usuario) {
+        return UsuarioResponse.de(usuarioService.atualizar(id, usuario));
     }
 
-    // Endpoint para deletar um usuário
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarUsuario(@PathVariable String id) {
-        Optional<Usuario> usuarioExistente = usuarioService.buscarPorId(id);
-
-        if (usuarioExistente.isPresent()) {
-            usuarioService.deletarUsuario(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        usuarioService.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 }
