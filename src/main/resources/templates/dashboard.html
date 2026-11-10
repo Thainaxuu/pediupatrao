@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content" id="dashboard">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Dashboard administrativo</h2>
+        <div class="d-flex align-items-center gap-3 small text-muted">
+            <span>Atualizado às <strong id="ultimaAtualizacao">—</strong></span>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="autoAtualizar" checked>
+                <label class="form-check-label" for="autoAtualizar">Atualizar a cada 60 s</label>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" id="btnAtualizar"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
+        </div>
+    </div>
+
+    <!-- RF05: filtros -->
+    <div class="card card-body shadow-sm mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fDe">De</label>
+                <input type="date" id="fDe" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fAte">Até</label>
+                <input type="date" id="fAte" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fStatus">Status</label>
+                <select id="fStatus" class="form-select form-select-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fTipo">Tipo</label>
+                <select id="fTipo" class="form-select form-select-sm"><option value="">Todos</option></select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fCategoria">Categoria</label>
+                <select id="fCategoria" class="form-select form-select-sm"><option value="">Todas</option></select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="fProduto">Produto</label>
+                <select id="fProduto" class="form-select form-select-sm"><option value="">Todos</option></select>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Períodos rápidos">
+                <button class="btn btn-outline-secondary preset" data-dias="1">Hoje</button>
+                <button class="btn btn-outline-secondary preset" data-dias="7">7 dias</button>
+                <button class="btn btn-outline-secondary preset" data-dias="30">30 dias</button>
+                <button class="btn btn-outline-secondary preset" data-dias="90">90 dias</button>
+                <button class="btn btn-outline-secondary preset" data-mes="1">Este mês</button>
+            </div>
+            <button class="btn btn-sm btn-primary ms-auto" id="btnAplicar"><i class="bi bi-funnel"></i> Aplicar filtros</button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnLimpar">Limpar</button>
+        </div>
+        <div id="erroFiltro" class="alert alert-danger py-2 mt-2 mb-0 small" style="display:none; white-space: pre-line;"></div>
+    </div>
+
+    <!-- RF01: indicadores -->
+    <div class="row g-3 mb-3" id="kpis"><!-- cards montados por dashboard.js --></div>
+
+    <div class="row g-3 mb-3">
+        <!-- RF02: vendas por periodo -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Faturamento e pedidos por período</span>
+                    <select id="agrupamento" class="form-select form-select-sm w-auto">
+                        <option value="">Automático</option><option value="DIA">Por dia</option>
+                        <option value="SEMANA">Por semana</option><option value="MES">Por mês</option>
+                    </select>
+                </div>
+                <div class="card-body"><div class="grafico-container"><canvas id="graficoPeriodo"></canvas></div>
+                    <div class="estado small text-muted text-center" data-para="graficoPeriodo"></div></div>
+            </div>
+        </div>
+        <!-- RF03: situacao dos pedidos -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">Situação dos pedidos</div>
+                <div class="card-body"><div class="grafico-container"><canvas id="graficoStatus"></canvas></div>
+                    <div class="estado small text-muted text-center" data-para="graficoStatus"></div>
+                    <div class="small text-center mt-2" id="emAndamento"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <!-- RF04: produtos mais vendidos -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Produtos mais vendidos</span>
+                    <div class="btn-group btn-group-sm">
+                        <input type="radio" class="btn-check" name="ordenarPor" id="ordQtd" value="QUANTIDADE" checked>
+                        <label class="btn btn-outline-secondary" for="ordQtd">Quantidade</label>
+                        <input type="radio" class="btn-check" name="ordenarPor" id="ordFat" value="FATURAMENTO">
+                        <label class="btn btn-outline-secondary" for="ordFat">Faturamento</label>
+                    </div>
+                </div>
+                <div class="card-body"><div class="grafico-container"><canvas id="graficoProdutos"></canvas></div>
+                    <div class="estado small text-muted text-center" data-para="graficoProdutos"></div></div>
+            </div>
+        </div>
+        <!-- RF02: horario de pico -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">Pedidos por hora do dia <small class="text-muted fw-normal" id="horaPico"></small></div>
+                <div class="card-body"><div class="grafico-container"><canvas id="graficoHora"></canvas></div>
+                    <div class="estado small text-muted text-center" data-para="graficoHora"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">Vendas por categoria</div>
+                <div class="card-body"><div class="grafico-container"><canvas id="graficoCategoria"></canvas></div>
+                    <div class="estado small text-muted text-center" data-para="graficoCategoria"></div></div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">Pedidos recentes</div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 small">
+                        <thead class="table-light"><tr><th class="ps-3">Entrada</th><th>Cliente</th><th class="text-center">Itens</th>
+                            <th>Tipo</th><th class="text-end">Total</th><th class="pe-3">Status</th></tr></thead>
+                        <tbody id="tabelaRecentes"><tr><td colspan="6" class="text-center text-muted py-3">Carregando…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script th:src="@{/js/dashboard.js}"></script>
+</div>
+</body>
+</html>
