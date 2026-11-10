@@ -8,13 +8,15 @@
 <div th:fragment="content">
 
     <div class="d-flex align-items-center gap-3 mb-4">
-        <a href="/usuarios" class="btn btn-outline-secondary btn-sm">
+        <a th:href="@{/usuarios}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i>
         </a>
         <h2 class="fw-bold mb-0">
             <span th:text="${usuario.id != null} ? 'Editar Usuário' : 'Novo Usuário'"></span>
         </h2>
     </div>
+
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}"></div>
 
     <div class="card shadow-sm" style="max-width: 540px;">
         <div class="card-body p-4">
@@ -47,11 +49,14 @@
                         </small>
                     </label>
                     <div class="input-group">
+                        <!-- A senha nunca e preenchida no formulario (nem o hash) -->
                         <input type="password"
                                id="password"
+                               name="password"
                                class="form-control"
-                               th:field="*{password}"
                                placeholder="••••••••"
+                               minlength="6"
+                               autocomplete="new-password"
                                th:required="${usuario.id == null}"/>
                         <button type="button" class="btn btn-outline-secondary" id="togglePassword">
                             <i class="bi bi-eye" id="eyeIcon"></i>
@@ -64,11 +69,16 @@
                     <label for="role" class="form-label fw-medium">
                         <i class="bi bi-shield me-1"></i>Perfil
                     </label>
-                    <select id="role" class="form-select" th:field="*{role}" required>
-                        <option value="" disabled>Selecione um perfil</option>
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="USER">USER</option>
+                    <select id="role" class="form-select" th:field="*{role}" required
+                            th:disabled="${usuario.id != null and usuario.username == #authentication.name}">
+                        <option th:each="p : ${perfis}" th:value="${p.name()}"
+                                th:text="${p.name() + ' — ' + p.descricao}"></option>
                     </select>
+                    <input type="hidden" name="role" th:value="${usuario.role}"
+                           th:if="${usuario.id != null and usuario.username == #authentication.name}"/>
+                    <div class="form-text" th:if="${usuario.id != null and usuario.username == #authentication.name}">
+                        Você não pode alterar o seu próprio perfil.
+                    </div>
                 </div>
 
                 <!-- Botões -->
@@ -77,7 +87,7 @@
                         <i class="bi bi-check-lg me-1"></i>
                         <span th:text="${usuario.id != null} ? 'Salvar Alterações' : 'Criar Usuário'"></span>
                     </button>
-                    <a href="/usuarios" class="btn btn-outline-secondary">Cancelar</a>
+                    <a th:href="@{/usuarios}" class="btn btn-outline-secondary">Cancelar</a>
                 </div>
 
             </form>
