@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>Auditoria</h2>
+        <button class="btn btn-outline-success btn-sm" id="btnIntegridade">
+            <i class="bi bi-patch-check me-1"></i>Verificar integridade
+        </button>
+    </div>
+    <p class="text-muted small">Registros somente leitura: não há opção de alterar ou excluir.
+        Telefones são armazenados mascarados e senhas nunca são registradas.</p>
+
+    <div id="resultadoIntegridade" class="alert" style="display:none;"></div>
+    <div class="alert alert-danger" th:if="${erro}" th:text="${erro}"></div>
+
+    <form method="get" th:action="@{/auditoria}" class="card card-body shadow-sm mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-1" for="entidade">Entidade</label>
+                <select name="entidade" id="entidade" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    <option th:each="e : ${entidades}" th:value="${e}" th:text="${e}" th:selected="${e == filtro.entidade}"></option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1" for="entidadeId">ID da entidade</label>
+                <input type="text" name="entidadeId" id="entidadeId" class="form-control form-control-sm" th:value="${filtro.entidadeId}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1" for="usuario">Usuário</label>
+                <input type="text" name="usuario" id="usuario" class="form-control form-control-sm" th:value="${filtro.usuario}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1" for="operacao">Operação</label>
+                <select name="operacao" id="operacao" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    <option th:each="o : ${operacoes}" th:value="${o}" th:text="${o.descricao}" th:selected="${o == filtro.operacao}"></option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small mb-1" for="de">De</label>
+                <input type="date" name="de" id="de" class="form-control form-control-sm" th:value="${filtro.de}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small mb-1" for="ate">Até</label>
+                <input type="date" name="ate" id="ate" class="form-control form-control-sm" th:value="${filtro.ate}">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary btn-sm w-100" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
+                <a th:href="@{/auditoria}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-dark">
+                    <tr><th class="ps-3">#</th><th>Data e hora</th><th>Usuário</th><th>Operação</th><th>Entidade</th>
+                        <th>Campo alterado</th><th>Valor anterior</th><th>Novo valor</th><th>Justificativa</th></tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${registros.empty}"><td colspan="9" class="text-center text-muted py-4">Nenhum registro encontrado.</td></tr>
+                    <th:block th:each="r : ${registros.content}">
+                        <tr th:if="${#lists.isEmpty(r.alteracoes)}">
+                            <td class="ps-3 text-muted" th:text="${r.sequencia}"></td>
+                            <td class="text-nowrap" th:text="${@fmt.dataHora(r.dataHora)}"></td>
+                            <td th:text="${r.usuario + ' (' + r.perfil + ')'}"></td>
+                            <td th:text="${r.operacao.descricao}"></td>
+                            <td th:text="${r.entidade + (r.entidadeId != null ? ' ' + r.entidadeId : '')}"></td>
+                            <td colspan="3" class="text-muted">—</td>
+                            <td th:text="${r.justificativa ?: ''}"></td>
+                        </tr>
+                        <tr th:each="a, st : ${r.alteracoes}">
+                            <td class="ps-3 text-muted" th:text="${st.first ? r.sequencia : ''}"></td>
+                            <td class="text-nowrap" th:text="${st.first ? @fmt.dataHora(r.dataHora) : ''}"></td>
+                            <td th:text="${st.first ? r.usuario + ' (' + r.perfil + ')' : ''}"></td>
+                            <td th:text="${st.first ? r.operacao.descricao : ''}"></td>
+                            <td>
+                                <a th:if="${st.first and r.entidade == 'PEDIDO'}" th:href="@{/pedidos/{id}(id=${r.entidadeId})}"
+                                   th:text="${'PEDIDO ' + r.entidadeId}"></a>
+                                <span th:if="${st.first and r.entidade != 'PEDIDO'}"
+                                      th:text="${r.entidade + (r.entidadeId != null ? ' ' + r.entidadeId : '')}"></span>
+                            </td>
+                            <td><code th:text="${a.campo}"></code></td>
+                            <td class="text-danger" th:text="${a.valorAnterior ?: '—'}"></td>
+                            <td class="text-success" th:text="${a.valorNovo ?: '—'}"></td>
+                            <td th:text="${st.first ? (r.justificativa ?: '') : ''}"></td>
+                        </tr>
+                    </th:block>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center small" th:if="${!registros.empty}">
+            <span>Total: <strong th:text="${registros.totalElements}"></strong> registro(s)</span>
+            <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-secondary" th:classappend="${registros.first} ? 'disabled'"
+                   th:href="@{/auditoria(entidade=${filtro.entidade},entidadeId=${filtro.entidadeId},usuario=${filtro.usuario},operacao=${filtro.operacao},de=${filtro.de},ate=${filtro.ate},page=${registros.number - 1})}">Anterior</a>
+                <span class="btn btn-outline-secondary disabled" th:text="${(registros.number + 1) + ' / ' + registros.totalPages}"></span>
+                <a class="btn btn-outline-secondary" th:classappend="${registros.last} ? 'disabled'"
+                   th:href="@{/auditoria(entidade=${filtro.entidade},entidadeId=${filtro.entidadeId},usuario=${filtro.usuario},operacao=${filtro.operacao},de=${filtro.de},ate=${filtro.ate},page=${registros.number + 1})}">Próxima</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('btnIntegridade').addEventListener('click', async () => {
+            const caixa = document.getElementById('resultadoIntegridade');
+            try {
+                const r = await apiFetch('/api/auditoria/integridade');
+                caixa.className = 'alert ' + (r.integro ? 'alert-success' : 'alert-danger');
+                caixa.textContent = r.mensagem;
+            } catch (e) {
+                caixa.className = 'alert alert-danger';
+                caixa.textContent = e.message;
+            }
+            caixa.style.display = 'block';
+        });
+    </script>
+</div>
+</body>
+</html>

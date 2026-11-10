@@ -63,3 +63,16 @@ body {
         cursor: pointer;
     }
 }
+/* Ajustes da evolucao do sistema */
+#sidebar { min-height: 100vh; position: sticky; top: 0; }
+.usuario-logado { color: rgba(255,255,255,0.75); }
+.conteudo-principal { flex: 1; min-width: 0; }
+.status-badge { font-size: 0.8rem; }
+.kpi-card .kpi-valor { font-size: 1.6rem; font-weight: 700; }
+.kpi-card .kpi-rotulo { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .04em; color: #6c757d; }
+.kpi-variacao.positiva { color: #198754; }
+.kpi-variacao.negativa { color: #dc3545; }
+.grafico-container { position: relative; height: 300px; }
+.timeline-status { border-left: 3px solid #dee2e6; padding-left: 1rem; }
+.timeline-status .item { position: relative; margin-bottom: .75rem; }
+.timeline-status .item::before { content: ''; position: absolute; left: -1.45rem; top: .35rem; width: .7rem; height: .7rem; border-radius: 50%; background: #0d6efd; }
