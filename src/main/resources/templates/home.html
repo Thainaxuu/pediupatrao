@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Home</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-
-<div class="container-fluid vh-100 d-flex justify-content-center align-items-center" th:fragment="content">
+<div class="container-fluid d-flex justify-content-center align-items-center" style="min-height: 85vh" th:fragment="content">
     <div class="text-center">
-        <h1>Bem-vindo!!!</h1>
-        <img th:src="@{/images/logo.png}" alt="Logo" width="500" height="500">
+        <h1>Bem-vindo, <span sec:authentication="name">usuário</span>!</h1>
+        <p class="text-muted">
+            <span sec:authorize="hasRole('ADMIN')">Perfil Administrador: gestão de usuários, consulta de pedidos e auditoria.</span>
+            <span sec:authorize="hasRole('GERENTE')">Perfil Gerente: gestão de pedidos, descontos, cancelamentos, dashboard e auditoria.</span>
+            <span sec:authorize="hasRole('ATENDENTE')">Perfil Atendente: cadastro de clientes, registro e acompanhamento de pedidos.</span>
+        </p>
+        <img th:src="@{/images/logo.png}" alt="Logo" width="360" height="360" class="img-fluid">
     </div>
 </div>
-
 </body>
 </html>
